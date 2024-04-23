@@ -1,0 +1,134 @@
+>>>markdown
+# Alex Ko - Project 2 
+## MalloyNB
+>>>malloy
+#Setting up source, view, and measures. 
+source: Crime is duckdb.table('NEWYearlyCrime.parquet') extend {
+    measure: Total_State is count(state_name)
+    measure: Total_Violent is count(violent_crime)
+    measure: Total_homicide is count(homicide)
+    measure: Total_rape is count(rape_legacy)
+    measure: Total_lar is count(larceny)
+    
+    view: Per_State is {
+        group_by: state_name, violent_crime
+    }
+
+    
+}   
+>>>malloy
+#See basic number of violent crime per state, along with the year
+run: Crime -> {
+    select: 
+    state_name, 
+    violent_crime,
+    theyear 
+    limit: 10
+    }
+>>>malloy
+#Overall US violent crime distribution 
+# shape_map
+run: Crime -> {
+    select: 
+    state_name, 
+    violent_crime,
+    theyear
+    where:
+    theyear = 2000
+}
+>>>malloy
+#View the amount of crime per state, and the year 2000
+run: Crime -> {
+    group_by: 
+    state_name, theyear
+    where: theyear = 2000
+    # shape_map
+    nest: Per_State
+    limit: 10
+}
+>>>malloy
+#A dashboard view of the state and their respective violent crime to the amount of homicide...
+#in the violent crime figure
+# dashboard
+run: Crime -> {
+    select: state_name, theyear, violent_crime, homicide
+    where: theyear = 2000 | state_name = 'Alaska'
+    limit: 10
+}
+>>>malloy
+#Shows the homicide per year in the state of Washington. The growth per year and etc.
+run: Crime -> {
+    select: state_name, theyear, homicide
+    where: state_name = 'Washington' 
+    limit: 10
+}
+>>>malloy
+#Improving off the previous data, this is a visual bar chart mixing both the violent crime...
+#and total rape percentages depending on year 
+# bar_chart
+run: Crime -> {
+    group_by: theyear, violent_crime
+    aggregate: 
+        Total_rape
+    where: state_name = 'Washington'
+}
+>>>malloy
+#Chart format of the year, the number of homicides per state, and number of violent crime...
+#in the state. More in depth analysis
+run: Crime -> {
+    group_by: 
+        theyear, 
+        homicide
+
+    nest: 
+        Per_State
+    limit: 10
+}
+>>>malloy
+#Total years with homicide and rape being involved. Are able to sumaize in a larget scale...
+#for the number of years of crime
+run: Crime -> {
+    group_by: state_name, homicide
+    aggregate:
+        Total_rape
+order_by: Total_rape desc
+limit: 15
+
+}
+>>>malloy
+#Visualization of the larceny in the state of Washington. Moving from total violent.
+# bar_chart
+run: Crime -> {
+    group_by: 
+        theyear, 
+        larceny
+    where: 
+        state_name = 'Washington' 
+    limit: 25
+}
+>>>malloy
+#Do analysis on greater population and violent crime correlations per state.
+run: Crime -> {
+    group_by: 
+        state_name, 
+        population, 
+        violent_crime
+    Where: 
+    population > 1000000
+    limit: 5
+    # shape_map
+    nest: Per_State
+}
+>>>malloy
+#Do analysis on the number of crime in low population states. 
+run: Crime -> {
+    group_by: 
+        state_name, 
+        population, 
+        violent_crime
+    Where: 
+    population < 1000000
+    limit: 5
+    # shape_map
+    nest: Per_State
+}
